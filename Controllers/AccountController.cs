@@ -1,15 +1,16 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using BookRecommender.Models;
 using BookRecommender.Models.ViewModels;
 
 namespace BookRecommender.Controllers;
 
 public class AccountController : Controller
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
 
-    public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
+    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -28,7 +29,7 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = new IdentityUser { UserName = model.Email, Email = model.Email };
+        var user = new ApplicationUser { UserName = model.Email, Email = model.Email, DisplayName= model.DisplayName };
         var result = await _userManager.CreateAsync(user, model.Password);
 
         if (result.Succeeded)

@@ -14,7 +14,7 @@ public class AuthorRepository : IAuthorRepository
     public async Task<IEnumerable<Author>> GetAllAsync()
         => await _context.Authors.ToListAsync();
 
-    public async Task<Author> GetByIdAsync(int id)
+    public async Task<Author?> GetByIdAsync(int id)
         => await _context.Authors.FindAsync(id);
 
     public async Task AddAsync(Author author)

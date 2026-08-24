@@ -20,7 +20,7 @@ public class BookRepository : IBookRepository
             .ToListAsync();
     }
 
-    public async Task<Book> GetByIdAsync(int id)
+    public async Task<Book?> GetByIdAsync(int id)
     {
         return await _context.Books
             .Include(b => b.Author)

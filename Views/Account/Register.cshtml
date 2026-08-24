@@ -10,7 +10,13 @@
 
         <form asp-action="Register" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-
+            
+            <div class="mb-3">
+                <label asp-for="DisplayName"></label>
+                <input asp-for="DisplayName" class="form-control" />
+                <span asp-validation-for="DisplayName" class="text-danger"></span>
+            </div>
+            
             <div class="mb-3">
                 <label asp-for="Email">Email</label>
                 <input asp-for="Email" class="form-control" autocomplete="email" />

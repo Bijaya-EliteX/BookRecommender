@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using BookRecommender.Models;
 
 namespace BookRecommender.Data;
 
-public class ApplicationDbContext : IdentityDbContext<IdentityUser>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options){}
@@ -15,21 +16,21 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Review> Reviews { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
-        {
-            base.OnModelCreating(builder);
+    {
+        base.OnModelCreating(builder);
 
-            // Composite key for the join table (many-to-many)
-            builder.Entity<BookGenre>()
-                .HasKey(bg => new { bg.BookId, bg.GenreId });
+        // Composite key for the join table (many-to-many)
+        builder.Entity<BookGenre>()
+            .HasKey(bg => new { bg.BookId, bg.GenreId });
 
-            builder.Entity<BookGenre>()
-                .HasOne(bg => bg.Book)
-                .WithMany(b => b.BookGenres)
-                .HasForeignKey(bg => bg.BookId);
+        builder.Entity<BookGenre>()
+            .HasOne(bg => bg.Book)
+            .WithMany(b => b.BookGenres)
+            .HasForeignKey(bg => bg.BookId);
 
-            builder.Entity<BookGenre>()
-                .HasOne(bg => bg.Genre)
-                .WithMany(g => g.BookGenres)
-                .HasForeignKey(bg => bg.GenreId);
-        }
+        builder.Entity<BookGenre>()
+            .HasOne(bg => bg.Genre)
+            .WithMany(g => g.BookGenres)
+            .HasForeignKey(bg => bg.GenreId);
+    }
 }

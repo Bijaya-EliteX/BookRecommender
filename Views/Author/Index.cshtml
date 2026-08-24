@@ -1,0 +1,27 @@
+@model IEnumerable<BookRecommender.Models.Author>
+
+<h2>Authors</h2>
+
+@if (User.IsInRole("Admin"))
+{
+    <a asp-action="Create" class="btn btn-primary mb-3">Add Author</a>
+}
+
+<table class="table">
+    <thead><tr><th>Name</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var author in Model)
+        {
+            <tr>
+                <td>@author.Name</td>
+                <td>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@author.Id">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@author.Id">Delete</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

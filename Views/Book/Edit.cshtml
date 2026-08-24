@@ -1,0 +1,39 @@
+@model BookRecommender.Models.ViewModels.BookViewModel
+
+<h2>Edit Book</h2>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="mb-3">
+        <label asp-for="Title"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="AuthorId"></label>
+        <select asp-for="AuthorId" asp-items="Model.Authors" class="form-control"></select>
+        <span asp-validation-for="AuthorId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label>Genres</label><br />
+        @foreach (var genre in Model.Genres)
+        {
+            <label>
+                <input type="checkbox" name="SelectedGenreIds" value="@genre.Value"
+                       checked="@Model.SelectedGenreIds.Contains(int.Parse(genre.Value))" />
+                @genre.Text
+            </label>
+            <br />
+        }
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>

@@ -1,0 +1,23 @@
+@model BookRecommender.Models.Book
+
+<h2>@Model.Title</h2>
+<p><strong>Author:</strong> @Model.Author?.Name</p>
+<p><strong>Description:</strong> @Model.Description</p>
+<p><strong>Genres:</strong> @string.Join(", ", Model.BookGenres.Select(bg => bg.Genre.Name))</p>
+
+<h4>Reviews</h4>
+@if (Model.Reviews.Any())
+{
+    <ul>
+        @foreach (var review in Model.Reviews)
+        {
+            <li>Rating: @review.Rating/5 — @review.Comment</li>
+        }
+    </ul>
+}
+else
+{
+    <p>No reviews yet.</p>
+}
+
+<a asp-action="Index">Back to list</a>

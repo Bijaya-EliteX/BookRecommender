@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using BookRecommender.Models;
-using BookRecommender.ViewModels;
+using BookRecommender.Models.ViewModels;
+
+namespace BookRecommender.Controllers;
 
 public class BookController : Controller
 {

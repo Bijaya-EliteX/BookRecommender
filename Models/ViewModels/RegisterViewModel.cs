@@ -9,6 +9,10 @@ public class RegisterViewModel
     public string Email { get; set; } = string.Empty;
 
     [Required]
+    [Display (Name="Name")]
+    public string DisplayName { get; set; } = string.Empty;
+
+    [Required]
     [DataType(DataType.Password)]
     public string Password { get; set; } = string.Empty;
 

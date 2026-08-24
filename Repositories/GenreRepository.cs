@@ -14,7 +14,7 @@ public class GenreRepository : IGenreRepository
     public async Task<IEnumerable<Genre>> GetAllAsync()
         => await _context.Genres.ToListAsync();
 
-    public async Task<Genre> GetByIdAsync(int id)
+    public async Task<Genre?> GetByIdAsync(int id)
         => await _context.Genres.FindAsync(id);
 
     public async Task AddAsync(Genre genre)
