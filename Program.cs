@@ -40,6 +40,10 @@ using (var scope = app.Services.CreateScope())
         if (!await roleManager.RoleExistsAsync(roleName))
             await roleManager.CreateAsync(new IdentityRole(roleName));
     }
+
+    // NEW — seeds Genres/Authors/Books if tables are empty
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await DbSeeder.SeedAsync(dbContext);
 }
 
 if (!app.Environment.IsDevelopment())

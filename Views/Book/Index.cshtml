@@ -1,10 +1,46 @@
-@model IEnumerable<BookRecommender.Models.Book>
+@model BookRecommender.Models.ViewModels.BookIndexViewModel
 
 <h2>Books</h2>
 
-@if (User.IsInRole("Admin")){
-    <a asp-action= "Create" class="btn btn-primary mb-3">Add New Book</a>
+@if (User.IsInRole("Admin"))
+{
+    <a asp-action="Create" class="btn btn-primary mb-3">Add New Book</a>
+    <!-- unchanged from before — Admin-only create link -->
 }
+
+<!-- FILTER FORM: GET method so filters show up in the URL (?genreId=..&authorId=..&sortBy=..) -->
+<form method="get" asp-action="Index" class="mb-3 d-flex gap-2">
+    <select name="genreId" class="form-control" onchange="this.form.submit()">
+        <!-- onchange="this.form.submit()" auto-submits when user picks a genre, no separate button needed -->
+        <option value="">All Genres</option>
+        @foreach (var genre in Model.Genres)
+        {
+            // selected attribute keeps the dropdown showing the currently active filter after reload
+            <option value="@genre.Value" selected="@(Model.SelectedGenreId?.ToString() == genre.Value)">
+                @genre.Text
+            </option>
+        }
+    </select>
+
+    <select name="authorId" class="form-control" onchange="this.form.submit()">
+        <option value="">All Authors</option>
+        @foreach (var author in Model.Authors)
+        {
+            <option value="@author.Value" selected="@(Model.SelectedAuthorId?.ToString() == author.Value)">
+                @author.Text
+            </option>
+        }
+    </select>
+
+    <select name="sortBy" class="form-control" onchange="this.form.submit()">
+        <option value="id" selected="@(Model.SortBy == "id")">Default</option>
+        <option value="title" selected="@(Model.SortBy == "title")">Title (A-Z)</option>
+        <!-- Nepali alphabet (क - ज्ञ) sort — handled by "nepali" case in BookRepository.GetPagedAsync -->
+        <option value="nepali" selected="@(Model.SortBy == "nepali")">Title (क - ज्ञ)</option>
+        <option value="rating" selected="@(Model.SortBy == "rating")">Highest Rated</option>
+    </select>
+</form>
+
 <table class="table">
     <thead>
         <tr>
@@ -15,7 +51,8 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var book in Model)
+        <!-- Model.Books, not Model directly — Model is now the ViewModel -->
+        @foreach (var book in Model.Books)
         {
             <tr>
                 <td>@book.Title</td>
@@ -33,3 +70,22 @@
         }
     </tbody>
 </table>
+
+<!-- PAGINATION LINKS: preserve current filters/sort while changing only the page number -->
+<nav>
+    <ul class="pagination">
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@i"
+                   asp-route-genreId="@Model.SelectedGenreId"
+                   asp-route-authorId="@Model.SelectedAuthorId"
+                   asp-route-sortBy="@Model.SortBy">
+                    @i
+                </a>
+            </li>
+        }
+    </ul>
+</nav>

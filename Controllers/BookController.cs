@@ -1,8 +1,8 @@
+using BookRecommender.Models;
+using BookRecommender.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using BookRecommender.Models;
-using BookRecommender.Models.ViewModels;
 
 namespace BookRecommender.Controllers;
 
@@ -15,7 +15,8 @@ public class BookController : Controller
     public BookController(
         IBookRepository bookRepository,
         IAuthorRepository authorRepository,
-        IGenreRepository genreRepository)
+        IGenreRepository genreRepository
+    )
     {
         _bookRepository = bookRepository;
         _authorRepository = authorRepository;
@@ -23,17 +24,46 @@ public class BookController : Controller
     }
 
     [AllowAnonymous]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(
+        int page = 1,
+        int? genreId = null,
+        int? authorId = null,
+        string sortBy = "id"
+    )
+    // ?page=2&genreId=3&sortBy=rating
     {
-        var books = await _bookRepository.GetAllAsync();
-        return View(books);
+        const int pageSize = 10; // fixed page size — could be made configurable later
+
+        var (books, totalCount) = await _bookRepository.GetPagedAsync(
+            page,
+            pageSize,
+            genreId,
+            authorId,
+            sortBy
+        );
+        // calls the repository method from Step 2 — this is where the actual filtered/sorted/paged query runs
+
+        var vm = new BookIndexViewModel
+        {
+            Books = books,
+            CurrentPage = page,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize), // e.g. 45 books / 10 per page = 5 pages
+            SelectedGenreId = genreId,
+            SelectedAuthorId = authorId,
+            SortBy = sortBy,
+            Authors = await GetAuthorSelectList(), // existing private method, reused here for the filter dropdown
+            Genres = await GetGenreSelectList(), // same — reused from Create/Edit dropdown logic
+        };
+
+        return View(vm); // sends BookIndexViewModel to Views/Book/Index.cshtml
     }
 
     [AllowAnonymous]
     public async Task<IActionResult> Details(int id)
     {
         var book = await _bookRepository.GetByIdAsync(id);
-        if (book == null) return NotFound();
+        if (book == null)
+            return NotFound();
         return View(book);
     }
 
@@ -43,7 +73,7 @@ public class BookController : Controller
         var vm = new BookViewModel
         {
             Authors = await GetAuthorSelectList(),
-            Genres = await GetGenreSelectList()
+            Genres = await GetGenreSelectList(),
         };
         return View(vm);
     }
@@ -65,9 +95,9 @@ public class BookController : Controller
             Title = vm.Title,
             Description = vm.Description,
             AuthorId = vm.AuthorId,
-            BookGenres = vm.SelectedGenreIds
-                .Select(gid => new BookGenre { GenreId = gid })
-                .ToList()
+            BookGenres = vm
+                .SelectedGenreIds.Select(gid => new BookGenre { GenreId = gid })
+                .ToList(),
         };
 
         await _bookRepository.AddAsync(book);
@@ -78,7 +108,8 @@ public class BookController : Controller
     public async Task<IActionResult> Edit(int id)
     {
         var book = await _bookRepository.GetByIdAsync(id);
-        if (book == null) return NotFound();
+        if (book == null)
+            return NotFound();
 
         var vm = new BookViewModel
         {
@@ -88,7 +119,7 @@ public class BookController : Controller
             AuthorId = book.AuthorId,
             SelectedGenreIds = book.BookGenres.Select(bg => bg.GenreId).ToList(),
             Authors = await GetAuthorSelectList(),
-            Genres = await GetGenreSelectList()
+            Genres = await GetGenreSelectList(),
         };
         return View(vm);
     }
@@ -106,7 +137,8 @@ public class BookController : Controller
         }
 
         var book = await _bookRepository.GetByIdAsync(vm.Id);
-        if (book == null) return NotFound();
+        if (book == null)
+            return NotFound();
 
         book.Title = vm.Title;
         book.Description = vm.Description;
@@ -124,7 +156,8 @@ public class BookController : Controller
     public async Task<IActionResult> Delete(int id)
     {
         var book = await _bookRepository.GetByIdAsync(id);
-        if (book == null) return NotFound();
+        if (book == null)
+            return NotFound();
         return View(book);
     }
 
@@ -140,12 +173,16 @@ public class BookController : Controller
     private async Task<List<SelectListItem>> GetAuthorSelectList()
     {
         var authors = await _authorRepository.GetAllAsync();
-        return authors.Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name }).ToList();
+        return authors
+            .Select(a => new SelectListItem { Value = a.Id.ToString(), Text = a.Name })
+            .ToList();
     }
 
     private async Task<List<SelectListItem>> GetGenreSelectList()
     {
         var genres = await _genreRepository.GetAllAsync();
-        return genres.Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name }).ToList();
+        return genres
+            .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name })
+            .ToList();
     }
 }
