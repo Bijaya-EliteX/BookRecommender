@@ -53,7 +53,7 @@ namespace BookRecommender.Data
                 await context.SaveChangesAsync();
             }
 
-            if (!context.Books.Any())
+            if (!context.Books.Any()) //is books table empty?
             {
                 // ---- modern international authors ----
                 var yarros = context.Authors.First(a => a.Name == "Rebecca Yarros");
