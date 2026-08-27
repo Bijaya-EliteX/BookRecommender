@@ -11,16 +11,20 @@ public class BookController : Controller
     private readonly IBookRepository _bookRepository;
     private readonly IAuthorRepository _authorRepository;
     private readonly IGenreRepository _genreRepository;
+    private readonly IReviewRepository _reviewRepository;
+    
 
     public BookController(
         IBookRepository bookRepository,
         IAuthorRepository authorRepository,
-        IGenreRepository genreRepository
+        IGenreRepository genreRepository,
+        IReviewRepository reviewRepository
     )
     {
         _bookRepository = bookRepository;
         _authorRepository = authorRepository;
         _genreRepository = genreRepository;
+        _reviewRepository = reviewRepository;
     }
 
     [AllowAnonymous]
@@ -66,6 +70,45 @@ public class BookController : Controller
             return NotFound();
         return View(book);
     }
+
+[Authorize] // only logged-in users (any role) can submit a review — no [Roles=] restriction needed
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> AddReview(ReviewViewModel vm)
+{
+    if (!ModelState.IsValid)
+    {
+        // If validation fails (e.g. rating out of range), send them back to Details
+        // with the error — TempData carries a message across the redirect
+        TempData["ReviewError"] = "Please provide a valid rating (1-5).";
+        return RedirectToAction(nameof(Details), new { id = vm.BookId });
+    }
+
+    var currentUser = await _userManager.GetUserAsync(User); // gets the logged-in ApplicationUser
+    if (currentUser == null) return Challenge(); // safety fallback — shouldn't happen due to [Authorize]
+
+    // Prevent duplicate reviews — one review per user per book
+    var existing = await _reviewRepository.GetByUserAndBookAsync(currentUser.Id, vm.BookId);
+    if (existing != null)
+    {
+        TempData["ReviewError"] = "You have already reviewed this book.";
+        return RedirectToAction(nameof(Details), new { id = vm.BookId });
+    }
+
+    var review = new Review
+    {
+        BookId = vm.BookId,
+        UserId = currentUser.Id,
+        Rating = vm.Rating,
+        Comment = vm.Comment,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    await _reviewRepository.AddAsync(review);
+    return RedirectToAction(nameof(Details), new { id = vm.BookId }); // reload page, review now shows
+}
+
+    
 
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create()
