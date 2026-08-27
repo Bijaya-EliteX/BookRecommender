@@ -1,6 +1,7 @@
 using BookRecommender.Models;
 using BookRecommender.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -12,11 +13,12 @@ public class BookController : Controller
     private readonly IAuthorRepository _authorRepository;
     private readonly IGenreRepository _genreRepository;
     private readonly IReviewRepository _reviewRepository;
-    
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public BookController(
         IBookRepository bookRepository,
         IAuthorRepository authorRepository,
+        UserManager<ApplicationUser> userManager,
         IGenreRepository genreRepository,
         IReviewRepository reviewRepository
     )
@@ -25,6 +27,7 @@ public class BookController : Controller
         _authorRepository = authorRepository;
         _genreRepository = genreRepository;
         _reviewRepository = reviewRepository;
+        _userManager = userManager;
     }
 
     [AllowAnonymous]
@@ -71,44 +74,43 @@ public class BookController : Controller
         return View(book);
     }
 
-[Authorize] // only logged-in users (any role) can submit a review — no [Roles=] restriction needed
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> AddReview(ReviewViewModel vm)
-{
-    if (!ModelState.IsValid)
+    [Authorize] // only logged-in users (any role) can submit a review — no [Roles=] restriction needed
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddReview(ReviewViewModel vm)
     {
-        // If validation fails (e.g. rating out of range), send them back to Details
-        // with the error — TempData carries a message across the redirect
-        TempData["ReviewError"] = "Please provide a valid rating (1-5).";
-        return RedirectToAction(nameof(Details), new { id = vm.BookId });
+        if (!ModelState.IsValid)
+        {
+            // If validation fails (e.g. rating out of range), send them back to Details
+            // with the error — TempData carries a message across the redirect
+            TempData["ReviewError"] = "Please provide a valid rating (1-5).";
+            return RedirectToAction(nameof(Details), new { id = vm.BookId });
+        }
+
+        var currentUser = await _userManager.GetUserAsync(User); // gets the logged-in ApplicationUser
+        if (currentUser == null)
+            return Challenge(); // safety fallback — shouldn't happen due to [Authorize]
+
+        // Prevent duplicate reviews — one review per user per book
+        var existing = await _reviewRepository.GetByUserAndBookAsync(currentUser.Id, vm.BookId);
+        if (existing != null)
+        {
+            TempData["ReviewError"] = "You have already reviewed this book.";
+            return RedirectToAction(nameof(Details), new { id = vm.BookId });
+        }
+
+        var review = new Review
+        {
+            BookId = vm.BookId,
+            UserId = currentUser.Id,
+            Rating = vm.Rating,
+            Comment = vm.Comment,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        await _reviewRepository.AddAsync(review);
+        return RedirectToAction(nameof(Details), new { id = vm.BookId }); // reload page, review now shows
     }
-
-    var currentUser = await _userManager.GetUserAsync(User); // gets the logged-in ApplicationUser
-    if (currentUser == null) return Challenge(); // safety fallback — shouldn't happen due to [Authorize]
-
-    // Prevent duplicate reviews — one review per user per book
-    var existing = await _reviewRepository.GetByUserAndBookAsync(currentUser.Id, vm.BookId);
-    if (existing != null)
-    {
-        TempData["ReviewError"] = "You have already reviewed this book.";
-        return RedirectToAction(nameof(Details), new { id = vm.BookId });
-    }
-
-    var review = new Review
-    {
-        BookId = vm.BookId,
-        UserId = currentUser.Id,
-        Rating = vm.Rating,
-        Comment = vm.Comment,
-        CreatedAt = DateTime.UtcNow
-    };
-
-    await _reviewRepository.AddAsync(review);
-    return RedirectToAction(nameof(Details), new { id = vm.BookId }); // reload page, review now shows
-}
-
-    
 
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create()
