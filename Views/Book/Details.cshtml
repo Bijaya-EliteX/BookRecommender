@@ -6,12 +6,54 @@
 <p><strong>Genres:</strong> @string.Join(", ", Model.BookGenres.Select(bg => bg.Genre.Name))</p>
 
 <h4>Reviews</h4>
+
+@if (TempData["ReviewError"] != null)
+{
+    <!-- Shows validation/duplicate-review errors passed via TempData from the controller -->
+    <div class="alert alert-danger">@TempData["ReviewError"]</div>
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <!-- Review submission form — only shown to logged-in users -->
+    <form asp-action="AddReview" asp-controller="Book" method="post" class="mb-3">
+        <input type="hidden" name="BookId" value="@Model.Id" />
+        <!-- BookId is hidden because the user shouldn't manually type it — it's implied by which page they're on -->
+
+        <div class="mb-2">
+            <label>Rating (1-5)</label>
+            <select name="Rating" class="form-control" style="width: auto;">
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Good</option>
+                <option value="3">3 - Average</option>
+                <option value="2">2 - Poor</option>
+                <option value="1">1 - Terrible</option>
+            </select>
+        </div>
+
+        <div class="mb-2">
+            <label>Comment</label>
+            <textarea name="Comment" class="form-control"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Review</button>
+    </form>
+}
+else
+{
+    <p><a asp-controller="Account" asp-action="Login">Log in</a> to leave a review.</p>
+}
+
 @if (Model.Reviews.Any())
 {
-    <ul>
-        @foreach (var review in Model.Reviews)
+    <ul class="list-group">
+        @foreach (var review in Model.Reviews.OrderByDescending(r => r.CreatedAt))
         {
-            <li>Rating: @review.Rating/5 — @review.Comment</li>
+            <li class="list-group-item">
+                <strong>@review.Rating/5</strong> — @review.Comment
+                <br />
+                <small class="text-muted">@review.CreatedAt.ToShortDateString()</small>
+            </li>
         }
     </ul>
 }
